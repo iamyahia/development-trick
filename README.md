@@ -1,5 +1,3 @@
 # refactor tricks
 
-in this file i inserted the refactoring trick, before and after the code
-
-this repository includes: -[x] refactor
+first we give a prop to the component (labelValuekeys) that we define a default_value for it, then we insert it as a label&value for formatData
