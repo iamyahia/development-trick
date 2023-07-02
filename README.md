@@ -1,5 +1,6 @@
 # refactor tricks
 
-in this file i inserted the refactoring trick, before and after the code
+in this file, i inserted the refactoring trick, before and after the code
 
-this repository includes: -[x] refactor
+this repository includes: \
+- [x] Refactor
