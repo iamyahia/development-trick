@@ -1,0 +1,117 @@
+# refactor tricks
+
+in the past i have a ticket from KPI project, where i implemented all UI and logics but after make a PR, the reviewer ( mr.ayoob ) refactor my code to be like more profitional
+
+from this: i create two useMemo for both basicFilters and isFilterVaild, the purpose of this function is to enabel/disable the Apply button in > analysis> prediction page.
+_description_: we have a modal, that include the toggle(New & Old) with toggle between them the design of the modal will be change and single input is added to the modal.
+
+```js
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+
+const basicFilters = useMemo(
+  () =>
+    (filters.selectedSites.length > 0 || filters.selectedGroups.length > 0) &&
+    filters.date.length > 0,
+  [
+    filters.selectedSites.length,
+    filters.selectedGroups.length,
+    filters.date.length,
+  ]
+);
+
+const isFilterValid = useMemo(
+  () => (isOld ? basicFilters && filters.predectedDays > 0 : basicFilters),
+  [basicFilters, filters.predectedDays, isOld]
+);
+```
+
+_To this_: we move basicFilters from outside to inside the isFilterValid and using this function to the apply button
+
+```js
+const isFilterValid = useMemo(() => {
+  const isBasicValid =
+    (filters.selectedSites.length > 0 || filters.selectedGroups.length > 0) &&
+    filters.date.length > 0;
+
+  if (isOld) {
+    return isBasicValid && filters.predictedDays > 0;
+  }
+
+  return isBasicValid;
+}, [
+  isOld,
+  filters.date,
+  filters.predictedDays,
+  filters.selectedSites,
+  filters.selectedGroups,
+]);
+```
+
+** remove all useEffect from the code **
+
+in this PR, i learn something, we're using _useEffect_ for boolean states when state changed, we reset date state that's **wrong**, as shown bellow:
+
+```js
+// remove above use effect
+useEffect(() => {
+  handleUpdateFilters("predectedDays", 0);
+}, [isOld]);
+```
+
+```js
+const handleUpdateFilters = (dataName, dataValue) =>
+  setFilters((state) => ({ ...state, [dataName]: dataValue }));
+```
+
+also remove above useEffect, instead we create a reset-function:
+
+```js
+useEffect(() => {
+  handleUpdateFilters("predectedDays", 0);
+  handleUpdateFilters("date", []);
+  handleUpdateFilters("selectedSites", []);
+  handleUpdateFilters("selectedGroups", []);
+  handleUpdateFilters("allGroups", []);
+}, [isOld])
+
+const handleResetFilters = useCallback(() => {
+    setFilters(INITIAL_FILTER_STATE)};
+```
+
+we use `handleResetFilters()` we reset all states when user toggle the buttons, and change the toggle funciton (handleSwitchButtonChange)
+
+```js
+// from this
+const handleSwitchButtonChange = useCallback((state) => setIsOld(state), []);
+// to this:
+const handleSwitchButtonChange = useCallback(() => {
+  setIsOld((previous) => !previous);
+  handleResetFilters();
+}, [handleResetFilters]);
+```
+
+and _refactor_ `handlePredictedDaysChange()`
+
+```js
+// from this
+const handlePredictedDaysChange = useCallback((event) => {
+  if (Number.isNaN(parseInt(event.target.value, 10)))
+    return handleUpdateFilters("predectedDays", 0);
+  return handleUpdateFilters(
+    "predectedDays",
+    parseInt(event.target.value, 10) + 1
+  );
+}, []);
+
+// to this:
+const handlePredictedDaysChange = useCallback((event) => {
+  if (Number.isNaN(parseInt(event.target.value, 10))) {
+    handleUpdateFilters("date", []);
+    handleUpdateFilters("predictedDays", 0);
+    return;
+  }
+
+  handleUpdateFilters("date", []);
+  handleUpdateFilters("predictedDays", parseInt(event.target.value, 10) + 1);
+}, []);
+```
