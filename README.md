@@ -83,3 +83,32 @@ export default function RenderList({ data, keysToRender }) {
 ```
 
 and tha's it .
+
+## refactor the code with chatgpt-4
+
+they create new component for rendering item with name: `RenderItem`
+here's the code:
+
+```js
+export default function RenderList({ data, keysToRender }) {
+  return (
+    <div>
+      {data.map((item, index) => (
+        <div key={index}>
+          {keysToRender.map((key) => (
+            <div key={key}>
+              <strong>{key}: </strong>
+              {Array.isArray(item[key]) ? item[key].join(", ") : item[key]}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+<RenderList
+  data={product}
+  keysToRender={["name", "price", "description", "rating"]}
+/>;
+```
